@@ -1,0 +1,39 @@
+# Arduino IDE
+*.ino.cpp
+*.ino.h
+*.hex
+*.elf
+*.bin
+*.map
+*.o
+*.a
+*.d
+*.tmp
+*.eep
+*.lss
+*.sym
+*.srec
+*.mcp
+*.lst
+*.obj
+*.db
+*.gch
+*.pre
+*.map
+*.pde
+build/
+.build/
+
+# VS Code (if you use it with PlatformIO or Arduino extension)
+.vscode/
+.pio/
+.pioenvs/
+.piolibdeps/
+
+# macOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

@@ -1,4 +1,4 @@
-# Clarity Band: AI-Driven Closed-Loop Stress Management System
+# Clarity Band: Maternal Care Edition [AI-Driven Risk Prevention]
 
 ![Project Status](https://img.shields.io/badge/Status-In%20Development-orange)
 ![Platform](https://img.shields.io/badge/Platform-ESP32--S3--T7-blue)

@@ -115,6 +115,19 @@ Accurate bio-signal acquisition requires stable physical connections.
 
 ---
 
+## 📊 Dashboard (Demo Only)
+
+A React-based web dashboard was used during development and live demonstration to visualize:
+- Heart rate
+- GSR
+- Motion state
+- Stress status and feedback
+
+For this submission, the repository focuses on the **embedded firmware**, which contains the core stress detection and haptic logic.  
+The dashboard is shown in the demo video and was used for validation, but is not required for the wearable’s operation.
+
+---
+
 ## 🚀 Future Roadmap
 
 - [ ] Develop additional calming haptic patterns (heartbeat, wave, pulse)

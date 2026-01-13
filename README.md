@@ -1,85 +1,143 @@
-# Clarity Band: Maternal Care Edition [AI-Driven Risk Prevention]
+# 🧠 Clarity Band  
+### AI-Driven Stress Detection & Real-Time Calming Wearable
 
 ![Project Status](https://img.shields.io/badge/Status-In%20Development-orange)
 ![Platform](https://img.shields.io/badge/Platform-ESP32--S3--T7-blue)
-![AI](https://img.shields.io/badge/AI-TinyML%20%2F%20Edge%20Impulse-green)
+![Edge](https://img.shields.io/badge/Edge%20AI-Context--Aware%20Logic-green)
 
-**Clarity Band** is a wearable biofeedback device designed to autonomously predict, monitor, and mitigate physiological stress. It features a **closed-loop system** that detects stress in real-time and immediately triggers soothing haptic vibration patterns to calm the user's nervous system.
+**Clarity Band** is a wearable biofeedback system designed to detect physiological stress in real time and respond immediately with calming haptic feedback.  
+It operates as a **closed-loop system**, combining on-device signal processing with contextual awareness to reduce false stress alerts and provide timely intervention.
 
 ---
 
 ## 📖 Table of Contents
 - [Overview](#overview)
-- [Core Innovation: Context-Aware AI](#core-innovation-context-aware-ai)
+- [Core Innovation: Context-Aware Intelligence](#core-innovation-context-aware-intelligence)
 - [Hardware Architecture](#hardware-architecture)
 - [Haptics & Nervous System Regulation](#haptics--nervous-system-regulation)
 - [Pin Configuration](#pin-configuration)
 - [Assembly & Soldering](#assembly--soldering)
+- [Future Roadmap](#future-roadmap)
 
 ---
 
 ## 🔍 Overview
-Standard wearables only *track* stress. The Clarity Band **intervenes**.
 
-By combining **Galvanic Skin Response (GSR)**, **Heart Rate (HR)**, and **Motion Data (IMU)**, the device identifies high-stress events. Once detected, it activates the **DA7280 Haptic Driver** to deliver scientifically designed vibration frequencies that stimulate the parasympathetic nervous system, grounding the user and reducing physiological arousal without requiring active user effort.
+Most consumer wearables only **track** stress and display metrics after the fact.  
+**Clarity Band actively intervenes.**
+
+By combining **Galvanic Skin Response (GSR)**, **Heart Rate (BPM)**, and **Motion Context (IMU)**, the system identifies high-stress events and triggers a gentle, non-intrusive haptic pattern designed to help the user calm down — without requiring manual input or screen interaction.
 
 ---
 
-## 💡 Core Innovation: Context-Aware AI
-The critical flaw in many stress wearables is the **"Post-Exercise False Positive."**
-* *Scenario:* You finish a run and sit down. Your Heart Rate is high (120 BPM), but your Motion is zero.
-* *Dumb Logic:* `High HR` + `No Motion` = `Panic Attack` -> **FALSE ALERT.**
+## 💡 Core Innovation: Context-Aware Intelligence
 
-**How it works:**
-1.  **Input:** The model receives a sequence of data.
-2.  **Inference:** It recognizes that the *cause* of the current High HR was previous physical activity.
-3.  **Result:** It suppresses the alert during the "cool down" phase, ensuring haptics only trigger for genuine psychological stress.
+A major challenge in stress detection is **false positives caused by physical activity**.
+
+### Example Problem  
+- User finishes a brisk walk  
+- Heart Rate remains elevated  
+- Motion suddenly drops to zero  
+
+Naive logic may interpret this as psychological stress.
+
+### Clarity Band’s Approach
+Instead of relying on single-point thresholds, Clarity Band evaluates **context**:
+
+1. **Input:** Continuous streams of GSR, Heart Rate, and Motion
+2. **Inference:** Determines whether elevated signals are caused by physical activity or stress
+3. **Decision:** Suppresses alerts during activity recovery and triggers haptics only during likely stress states
+
+This approach significantly reduces false alerts and improves user trust.
 
 ---
 
 ## 🛠 Hardware Architecture
 
-The system is built on the powerful **ESP32-S3**, utilizing its vector processing capabilities for on-device AI.
+The system is built on the **ESP32-S3**, enabling on-device processing with low latency and reliable sensor timing.
 
 ### Component List
+
 | Component | Model | Purpose |
-| :--- | :--- | :--- |
-| **Microcontroller** | **LILYGO® T7 S3 ESP32-S3** | The central processing unit (Dual-core, WiFi/BT 5.0, 8MB PSRAM) running the AI model. |
-| **GSR Sensor** | **Seeed Studio Grove GSR** | Measures skin conductivity (sweat gland activity). Crucial for detecting "emotional sweat" vs "thermal sweat". |
-| **Biometric Sensor** | **SparkFun SEN-15219** | Pulse Oximeter & Heart Rate (MAX30101 & MAX32664) for high-fidelity HRV data. |
-| **IMU (Motion)** | **MPU-6050** | 3-Axis Accelerometer & Gyro. Provides the "Activity History" context for the AI. |
-| **Haptics** | **SmartElex DA7280** | **Linear Resonant Actuator (LRA) Driver**. Delivers complex, crisp vibration waveforms for nervous system regulation. |
+|---------|------|---------|
+| **Microcontroller** | **LILYGO® T7 S3 ESP32-S3** | Central processing unit (Dual-core, WiFi/Bluetooth, PSRAM) |
+| **GSR Sensor** | **Seeed Studio Grove GSR** | Measures skin conductance related to sympathetic nervous system activity |
+| **Biometric Sensor** | **SparkFun SEN-15219** | Heart rate & pulse oximetry (MAX30101 + MAX32664) |
+| **IMU** | **MPU-6050** | Motion and activity context |
+| **Haptic Driver** | **SmartElex DA7280** | Drives Linear Resonant Actuator (LRA) for precise vibration control |
 
 ---
 
 ## 🌊 Haptics & Nervous System Regulation
-Unlike basic buzzers that just "notify" you, the **SmartElex DA7280** drives an LRA (Linear Resonant Actuator) to create precise, high-definition vibration textures.
 
-**Therapeutic Vibration Patterns:**
-We utilize specific frequencies (typically low-frequency, rhythmic pulsing) known to stimulate the **Vagus Nerve** and induce a "Rest and Digest" state.
-* **Entrainment:** Rhythmic pulses that mimic a slow, resting heartbeat (~60 BPM), subconsciously encouraging the user's heart rate to sync with the device.
-* **Grounding:** "Heavy" vibration pulses that shift focus from mental spiraling to physical sensation.
-* **Waveforms:** Smooth, sinusoidal vibrations (ramp-up/ramp-down) rather than harsh on/off buzzing.
+Unlike basic vibration motors that only notify the user, the **DA7280 LRA driver** enables smooth, high-definition vibration waveforms.
+
+### Design Principles
+- **Soft ramp-up / ramp-down** (no harsh buzzing)
+- **Rhythmic, low-frequency pulses**
+- Designed to be **noticeable but non-distracting**
+
+### Intended Effect
+These vibration patterns are inspired by slow breathing rhythms and grounding techniques, encouraging the user to shift attention from cognitive stress to physical sensation.
+
+> Note: This system is designed for wellness support, not medical treatment.
 
 ---
 
-## ⚡ Assembly & Soldering
+## ⚡ Pin Configuration
 
-Reliable bio-data requires rock-solid physical connections.
+| Module | ESP32-S3 Pin |
+|------|-------------|
+| I2C SDA | GPIO 15 |
+| I2C SCL | GPIO 16 |
+| Pulse Sensor RESET | GPIO 13 |
+| Pulse Sensor MFIO | GPIO 14 |
+| GSR Analog Output | GPIO 5 |
 
-1.  **Soldering Male Headers:**
-    * The **LILYGO T7**, **MPU-6050**, and **SparkFun** modules shipped without pre-soldered pins.
-    * **Crucial Step:** Solder **Male Header Pins** to these boards.
-    * *Why?* A loose "plug-and-play" jumper wire connection will result in false stress readings.
-2.  **Required Tools:**
-    * Soldering Iron (Temperature adjustable).
-    * Lead-free Solder Wire & Flux.
-    * Safety Glasses.
+---
+
+## 🔧 Assembly & Soldering
+
+Accurate bio-signal acquisition requires stable physical connections.
+
+### Key Steps
+1. **Solder male header pins** to:
+   - LILYGO T7 S3
+   - MPU-6050
+   - SparkFun SEN-15219
+2. Avoid loose jumper-only connections for biometric sensors
+3. Secure GSR electrodes firmly for consistent readings
+
+### Required Tools
+- Temperature-controlled soldering iron
+- Lead-free solder and flux
+- Safety glasses
 
 ---
 
 ## 🚀 Future Roadmap
-- [ ] Develop custom vibration waveforms (Heartbeat, Ocean Wave, Purr).
-- [ ] Collect multi-modal dataset (Rest vs. Stress vs. Activity vs. Recovery).
-- [ ] Train Edge Impulse Model.
-- [ ] 3D print wrist enclosure.
+
+- [ ] Develop additional calming haptic patterns (heartbeat, wave, pulse)
+- [ ] Long-term adaptive baseline calibration
+- [ ] Dataset collection for activity vs. stress classification
+- [ ] Lightweight ML model for improved context recognition
+- [ ] Compact wrist-worn enclosure (3D printed)
+- [ ] Battery-powered standalone operation
+
+---
+
+## 📝 Notes
+
+- SpO₂ is treated as a **background health indicator** and may remain stable in healthy users
+- Stress detection does **not** rely on SpO₂
+- The project is intended for **wellness and research prototyping**, not medical diagnosis
+
+---
+
+## 🏁 Conclusion
+
+Clarity Band demonstrates how multi-modal physiological sensing and haptic feedback can be combined into a responsive, real-time stress regulation system.  
+By focusing on **context awareness**, **on-device intelligence**, and **user comfort**, the project lays a strong foundation for future wearable wellness applications.
+
+---
+

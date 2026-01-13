@@ -1,0 +1,231 @@
+/*
+ * CLARITY BAND -
+ * Fixes:
+ *  - Body worn detection fixed (GSR-based)
+ *  - BPM no longer blocks state
+ *  - Stress & Calm states work correctly
+ */
+
+#include <Wire.h>
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ArduinoJson.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <SparkFun_Bio_Sensor_Hub_Library.h>
+#include "Haptic_Driver.h"
+
+/* ---------- WIFI ---------- */
+const char* ssid = "YOUR_WIFI_NAME";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+
+/* ---------- SERVER ---------- */
+WebServer server(80);
+
+/* ---------- PINS ---------- */
+#define I2C_SDA 15
+#define I2C_SCL 16
+#define PULSE_RST 13
+#define PULSE_MFIO 14
+#define GSR_PIN 5
+
+/* ---------- OBJECTS ---------- */
+Adafruit_MPU6050 mpu;
+SparkFun_Bio_Sensor_Hub bioHub(PULSE_RST, PULSE_MFIO);
+Haptic_Driver hapDrive;
+bioData body;
+
+/* ---------- STATE ---------- */
+int heartRate = 0;
+int stableHeartRate = 0;
+bool hrInitialized = false;
+
+int spo2 = 98;
+int gsrRaw = 0;
+int gsrBaseline = 0;
+bool gsrCalibrated = false;
+
+float motionVal = 0;
+bool bodyWorn = false;
+String statusText = "Booting";
+
+/* ---------- TIMING ---------- */
+unsigned long calibStart = 0;
+unsigned long lastStressTime = 0;
+
+/* ---------- CONSTANTS ---------- */
+const unsigned long CALIBRATION_TIME = 5000;
+
+const int HR_MIN_VALID = 45;
+const int HR_MAX_VALID = 160;
+const int HR_STRESS_LIMIT = 100;
+
+const float GSR_DROP_LIMIT = 22.0;
+const int GSR_NO_CONTACT = 1700;
+
+const float MOTION_LIMIT = 14.0;
+const unsigned long STRESS_COOLDOWN = 20000;
+
+/* ---------- PROTOTYPES ---------- */
+void runOmVibration();
+void handleData();
+void handleHaptics();
+void addCorsHeaders();
+
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+  while (!Serial)
+    ;
+
+  Serial.println("\n--- CLARITY BAND BOOT ---");
+
+  Wire.begin(I2C_SDA, I2C_SCL);
+
+  mpu.begin();
+  mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
+
+  bioHub.begin(Wire);
+  bioHub.configBpm(MODE_ONE);
+
+  hapDrive.begin();
+  hapDrive.defaultMotor();
+  hapDrive.setOperationMode(DRO_MODE);
+  hapDrive.enableFreqTrack(false);
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) delay(300);
+
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+
+  server.on("/data", HTTP_GET, handleData);
+  server.on("/haptics", HTTP_GET, handleHaptics);
+  server.begin();
+
+  calibStart = millis();
+  statusText = "Calibrating";
+  Serial.println("Calibrating GSR baseline...");
+}
+
+void loop() {
+  server.handleClient();
+
+  /* ---------- GSR ---------- */
+  gsrRaw = analogRead(GSR_PIN);
+
+  if (!gsrCalibrated) {
+    gsrBaseline += gsrRaw;
+    if (millis() - calibStart >= CALIBRATION_TIME) {
+      gsrBaseline /= 50;
+      gsrCalibrated = true;
+      Serial.print("GSR baseline: ");
+      Serial.println(gsrBaseline);
+    }
+    delay(100);
+    return;
+  }
+
+  /* ---------- BODY WORN (FIXED) ---------- */
+  bodyWorn = gsrRaw < GSR_NO_CONTACT;
+
+  /* ---------- HEART RATE ---------- */
+  body = bioHub.readBpm();
+  int rawHR = body.heartRate;
+  int confidence = body.confidence;
+
+  if (rawHR >= HR_MIN_VALID && rawHR <= HR_MAX_VALID && confidence > 60) {
+
+    stableHeartRate = hrInitialized
+                        ? (int)(0.8 * stableHeartRate + 0.2 * rawHR)
+                        : rawHR;
+
+    hrInitialized = true;
+  }
+
+  heartRate = hrInitialized ? stableHeartRate : 0;
+
+  /* ---------- MOTION ---------- */
+  sensors_event_t a, g, t;
+  mpu.getEvent(&a, &g, &t);
+  motionVal =
+    abs(a.acceleration.x) + abs(a.acceleration.y) + abs(a.acceleration.z);
+
+  bool moving = motionVal > MOTION_LIMIT;
+
+  /* ---------- GSR DROP ---------- */
+  float gsrDrop =
+    ((float)(gsrBaseline - gsrRaw) / gsrBaseline) * 100.0;
+
+  /* ---------- STATE MACHINE ---------- */
+  if (!bodyWorn) {
+    statusText = "Not Worn";
+  } else if (gsrDrop >= GSR_DROP_LIMIT && heartRate >= HR_STRESS_LIMIT && !moving && millis() - lastStressTime > STRESS_COOLDOWN) {
+
+    statusText = "High Stress";
+    lastStressTime = millis();
+    Serial.println(">>> STRESS DETECTED <<<");
+    runOmVibration();
+  } else if (moving) {
+    statusText = "Moving";
+  } else {
+    statusText = "Calm";
+  }
+
+  Serial.print("GSR: ");
+  Serial.print(gsrRaw);
+  Serial.print(" | HR: ");
+  Serial.print(heartRate);
+  Serial.print(" | Drop%: ");
+  Serial.print(gsrDrop);
+  Serial.print(" | Motion: ");
+  Serial.print(motionVal);
+  Serial.print(" | State: ");
+  Serial.println(statusText);
+
+  delay(250);
+}
+
+/* ---------- API ---------- */
+void handleData() {
+  StaticJsonDocument<256> doc;
+  doc["heartRate"] = heartRate;
+  doc["spo2"] = spo2;
+  doc["gsr"] = gsrRaw;
+  doc["gsrBaseline"] = gsrBaseline;
+  doc["motion"] = statusText;
+  doc["bodyWorn"] = bodyWorn;
+
+  String out;
+  serializeJson(doc, out);
+  addCorsHeaders();
+  server.send(200, "application/json", out);
+}
+
+void handleHaptics() {
+  hapDrive.setVibrate(40);
+  delay(300);
+  hapDrive.setVibrate(0);
+  addCorsHeaders();
+  server.send(200, "text/plain", "OK");
+}
+
+void addCorsHeaders() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+}
+
+/* ---------- OM HAPTIC ---------- */
+void runOmVibration() {
+  for (int i = 20; i <= 55; i += 2) {
+    hapDrive.setVibrate(i);
+    delay(180);
+  }
+  delay(800);
+  for (int i = 55; i >= 20; i -= 2) {
+    hapDrive.setVibrate(i);
+    delay(220);
+  }
+  hapDrive.setVibrate(0);
+  delay(1500);
+}

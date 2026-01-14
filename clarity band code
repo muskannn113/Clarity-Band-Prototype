@@ -1,8 +1,8 @@
 /*
  * CLARITY BAND -
- * Fixes:
- *  - Body worn detection fixed (GSR-based)
- *  - BPM no longer blocks state
+ * Fixes :
+ *   Body worn detection fixed (GSR-based)
+ *  -BPM no longer blocks state
  *  - Stress & Calm states work correctly
  */
 
@@ -15,28 +15,28 @@
 #include <SparkFun_Bio_Sensor_Hub_Library.h>
 #include "Haptic_Driver.h"
 
-/* ---------- WIFI ---------- */
+
 const char* ssid = "YOUR_WIFI_NAME";
 const char* password = "YOUR_WIFI_PASSWORD";
 
 
-/* ---------- SERVER ---------- */
+
 WebServer server(80);
 
-/* ---------- PINS ---------- */
+/* --- PINS ------ */
 #define I2C_SDA 15
 #define I2C_SCL 16
 #define PULSE_RST 13
 #define PULSE_MFIO 14
 #define GSR_PIN 5
 
-/* ---------- OBJECTS ---------- */
+/* -------- OBJECTS ------- */
 Adafruit_MPU6050 mpu;
 SparkFun_Bio_Sensor_Hub bioHub(PULSE_RST, PULSE_MFIO);
 Haptic_Driver hapDrive;
 bioData body;
 
-/* ---------- STATE ---------- */
+/* -------- STATE ------ */
 int heartRate = 0;
 int stableHeartRate = 0;
 bool hrInitialized = false;
@@ -50,11 +50,10 @@ float motionVal = 0;
 bool bodyWorn = false;
 String statusText = "Booting";
 
-/* ---------- TIMING ---------- */
+/* ------TIMING ---------- */
 unsigned long calibStart = 0;
 unsigned long lastStressTime = 0;
 
-/* ---------- CONSTANTS ---------- */
 const unsigned long CALIBRATION_TIME = 5000;
 
 const int HR_MIN_VALID = 45;
@@ -67,7 +66,7 @@ const int GSR_NO_CONTACT = 1700;
 const float MOTION_LIMIT = 14.0;
 const unsigned long STRESS_COOLDOWN = 20000;
 
-/* ---------- PROTOTYPES ---------- */
+
 void runOmVibration();
 void handleData();
 void handleHaptics();
@@ -127,10 +126,10 @@ void loop() {
     return;
   }
 
-  /* ---------- BODY WORN (FIXED) ---------- */
+  /* ---------- Body worn or not ----- */
   bodyWorn = gsrRaw < GSR_NO_CONTACT;
 
-  /* ---------- HEART RATE ---------- */
+  /* --- HEART RATE ----- */
   body = bioHub.readBpm();
   int rawHR = body.heartRate;
   int confidence = body.confidence;
@@ -158,7 +157,7 @@ void loop() {
   float gsrDrop =
     ((float)(gsrBaseline - gsrRaw) / gsrBaseline) * 100.0;
 
-  /* ---------- STATE MACHINE ---------- */
+  
   if (!bodyWorn) {
     statusText = "Not Worn";
   } else if (gsrDrop >= GSR_DROP_LIMIT && heartRate >= HR_STRESS_LIMIT && !moving && millis() - lastStressTime > STRESS_COOLDOWN) {
@@ -215,7 +214,7 @@ void addCorsHeaders() {
   server.sendHeader("Access-Control-Allow-Origin", "*");
 }
 
-/* ---------- OM HAPTIC ---------- */
+/* ------- OM HAPTIC VIBRATIONS FOR STRESS CALMING ----- */
 void runOmVibration() {
   for (int i = 20; i <= 55; i += 2) {
     hapDrive.setVibrate(i);
